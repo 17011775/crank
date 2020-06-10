@@ -224,6 +224,7 @@ class DiffVQVAETrainer(VQVAETrainer):
             feats[wavf]["feat_diffvc"][:, 0] = org_feat[:, 0]
             feats[wavf]["feat_diff"] = feats[wavf]["feat_diffvc"] - org_feat
             feats[wavf]["org_feat"] = org_feat
+
         return feats
 
     def _save_decoded_world_diffvc(self, feats):
@@ -233,7 +234,7 @@ class DiffVQVAETrainer(VQVAETrainer):
                     v["f0"][:, 0].astype(np.float64),
                     v["feat_diffvc"].astype(np.float64),
                     v["cap"].astype(np.float64),
-                    wavf=str(k) + ".diff_vocoder.wav",
+                    wavf=str(k) + ".diff_sfvoc.wav",
                     fs=self.conf["feature"]["fs"],
                     fftl=self.conf["feature"]["fftl"],
                     shiftms=self.conf["feature"]["shiftms"],
@@ -242,21 +243,21 @@ class DiffVQVAETrainer(VQVAETrainer):
                 for k, v in feats.items()
             ]
         )
-        # Parallel(n_jobs=self.n_jobs)(
-        #     [
-        #         delayed(diff2wav)(
-        #             v["org_wav"].astype(np.float64),
-        #             v["feat_diff"].astype(np.float64),
-        #             v["org_feat"].astype(np.float64),
-        #             wavf=str(k) + "diff.wav",
-        #             fs=self.conf["feature"]["fs"],
-        #             fftl=self.conf["feature"]["fftl"],
-        #             shiftms=self.conf["feature"]["shiftms"],
-        #             alpha=self.conf["feature"]["mcep_alpha"],
-        #         )
-        #         for k, v in feats.items()
-        #     ]
-        # )
+        Parallel(n_jobs=self.n_jobs)(
+            [
+                delayed(diff2wav)(
+                    v["org_wav"].astype(np.float64),
+                    v["feat_diff"].astype(np.float64),
+                    v["org_feat"].astype(np.float64),
+                    wavf=str(k) + ".diff.wav",
+                    fs=self.conf["feature"]["fs"],
+                    fftl=self.conf["feature"]["fftl"],
+                    shiftms=self.conf["feature"]["shiftms"],
+                    alpha=self.conf["feature"]["mcep_alpha"],
+                )
+                for k, v in feats.items()
+            ]
+        )
 
     def _check_diff_start(self):
         if self.steps > self.conf["n_steps_diff_start"]:
