@@ -26,6 +26,7 @@ from tensorboardX import SummaryWriter
 from parallel_wavegan.models import ParallelWaveGANDiscriminator
 
 from crank.net.module.vqvae2 import VQVAE2
+from crank.net.module.diffvqvae2 import DiffVQVAE2
 from crank.utils import load_yaml, open_scpdir, open_featsscp
 from crank.net.trainer.utils import (
     get_optimizer,
@@ -38,6 +39,7 @@ from crank.net.trainer import (
     LSGANTrainer,
     CycleVQVAETrainer,
     CycleGANTrainer,
+    DiffVQVAETrainer,
 )
 
 warnings.simplefilter(action="ignore")
@@ -56,7 +58,10 @@ torch.backends.cudnn.benchmark = True
 
 
 def get_model(conf, spkr_size=0, device="cuda"):
-    G = VQVAE2(conf, spkr_size=spkr_size).to(device)
+    if conf["trainer_type"] in ["vqvae_diff"]:
+        G = DiffVQVAE2(conf, spkr_size=spkr_size).to(device)
+    else:
+        G = VQVAE2(conf, spkr_size=spkr_size).to(device)
 
     # discriminator
     if conf["gan_type"] == "lsgan":
@@ -179,6 +184,9 @@ def main():
         trainer = CycleVQVAETrainer(**ka)
     elif conf["trainer_type"] == "cyclegan":
         trainer = CycleGANTrainer(**ka)
+    elif conf["trainer_type"] == "vqvae_diff":
+        trainer = DiffVQVAETrainer(**ka)
+        assert conf["feat_type"] == "mcep", "feat_type must be mcep for DIFFVC"
     else:
         raise NotImplementedError(
             "conf['trainer_type']: {} is not supported.".format(conf["trainer_type"])

@@ -266,16 +266,28 @@ class VQVAETrainer(BaseTrainer):
         return feats
 
     def _save_decoded_world(self, feats):
-        for k, v in feats.items():
-            world2wav(
-                v["f0"][:, 0].astype(np.float64),
-                v["feat"].astype(np.float64),
-                v["cap"].astype(np.float64),
-                wavf=k,
-                fs=self.conf["feature"]["fs"],
-                fftl=self.conf["feature"]["fftl"],
-                shiftms=self.conf["feature"]["shiftms"],
-                alpha=self.conf["feature"]["mcep_alpha"],
+        Parallel(n_jobs=self.n_jobs)(
+            [
+                delayed(world2wav)(
+                    v["f0"][:, 0].astype(np.float64),
+                    v["feat"].astype(np.float64),
+                    v["cap"].astype(np.float64),
+                    wavf=k,
+                    fs=self.conf["feature"]["fs"],
+                    fftl=self.conf["feature"]["fftl"],
+                    shiftms=self.conf["feature"]["shiftms"],
+                    alpha=self.conf["feature"]["mcep_alpha"],
+                )
+                for k, v in feats.items()
+            ]
+        )
+        type_features = ["f0", "feat", "cap"]
+        for k in type_features:
+            Parallel(n_jobs=self.n_jobs)(
+                [
+                    delayed(feat2hdf5)(feat[k], path, ext=k)
+                    for path, feat in feats.items()
+                ]
             )
 
     def _save_decoded_mlfbs(self, feats):
