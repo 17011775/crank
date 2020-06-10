@@ -47,15 +47,15 @@ class VQVAE2(nn.Module):
         for n in range(self.net_conf["n_cycles"]):
             enc, org_spkr_cls = self.encode(x, enc_h=org_enc_h)
             org_enc, org_dec, org_emb_idxs, _, org_qidxs = self.decode(
-                enc, org_dec_h, use_ema=True
+                [e.clone() for e in enc], org_dec_h, use_ema=True
             )
             cv_enc, cv_dec, cv_emb_idxs, _, cv_qidxs = self.decode(
-                enc, cv_dec_h, use_ema=False
+                [e.clone() for e in enc], cv_dec_h, use_ema=False
             )
 
-            enc, cv_spkr_cls = self.encode(cv_dec, enc_h=cv_enc_h)
+            cv_enc, cv_spkr_cls = self.encode(cv_dec, enc_h=cv_enc_h)
             recon_enc, recon_dec, recon_emb_idxs, _, recon_qidxs = self.decode(
-                enc, org_dec_h, use_ema=True
+                [e.clone() for e in cv_enc], org_dec_h, use_ema=True
             )
             outputs.append(
                 {
