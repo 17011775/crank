@@ -36,6 +36,7 @@ class Feature(object):
     def analyze(self, wavf, gl_flag=False):
         self.fs, x, flbl = self._open_wavf(wavf)
         assert self.fs == self.conf["fs"]
+        self.feats["wav"] = x
 
         h5f = self.h5_dir / (flbl + ".h5")
         if not h5f.exists():
@@ -141,6 +142,6 @@ class Feature(object):
             self.feats["ap"],
             alpha=self.conf["mcep_alpha"],
         )
-        self.feats["x_anasyn"] = np.clip(anasyn, -1., 1.)
+        self.feats["anasyn"] = np.clip(anasyn, -1., 1.)
         anasynf = self.h5_dir / (flbl + "_anasyn.wav")
         sf.write(str(anasynf), anasyn, self.conf["fs"])
